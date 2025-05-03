@@ -95,6 +95,16 @@ class User extends Authenticatable implements FilamentUser
     // can access panel admin
     public function canAccessPanel(\Filament\Panel $panel): bool
     {
-        return $this->isAdmin() || $this->isCustomer()   || $this->isCourier();
+        //please create authenticate for admin panel only admin use,customer panel only can access by customer
+        //courier panel only can access by courier
+        if ($panel->getId() === 'admin') {
+            return $this->isAdmin();
+        } elseif ($panel->getId() === 'customer') {
+            return $this->isCustomer();
+        } elseif ($panel->getId() === 'courier') {
+            return $this->isCourier();
+        }
+
+return false;
     }
 }
