@@ -19,6 +19,13 @@ class MenuResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-book-open';
 
+    // customize the navigation label
+
+    public static function getLabel(): string
+    {
+        return 'Menu';
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -30,7 +37,7 @@ class MenuResource extends Resource
                 Forms\Components\TextInput::make('price')
                     ->required()
                     ->numeric()
-                    ->prefix('$'),
+                    ->prefix('Rp'),
                 Forms\Components\Toggle::make('is_available')
                     ->required(),
                 Forms\Components\FileUpload::make('image_path')
@@ -45,7 +52,7 @@ class MenuResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('price')
-                    ->money()
+                    ->money("idr")
                     ->sortable(),
                 Tables\Columns\IconColumn::make('is_available')
                     ->boolean(),
@@ -85,6 +92,16 @@ class MenuResource extends Resource
             'index' => Pages\ListMenus::route('/'),
             'create' => Pages\CreateMenu::route('/create'),
             'edit' => Pages\EditMenu::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getNavigation(): array
+    {
+        return [
+            'label' => 'Menus',
+            'icon' => 'heroicon-o-book-open',
+            'group' => 'Manajemen Menu',
+            'sort' => 1, // Urutan dalam navigasi
         ];
     }
 }

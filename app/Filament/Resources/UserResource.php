@@ -19,6 +19,16 @@ class UserResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-user';
 
+    public static function getNavigation(): array
+    {
+        return [
+            'label' => 'Users',
+            'icon' => 'heroicon-o-user-group',
+            'group' => 'Pengguna',
+            'sort' => 6,
+        ];
+    }
+
     public static function form(Form $form): Form
     {
         return $form

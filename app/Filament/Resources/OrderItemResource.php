@@ -3,15 +3,13 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\OrderItemResource\Pages;
-use App\Filament\Resources\OrderItemResource\RelationManagers;
 use App\Models\OrderItem;
+use App\Models\Menu;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class OrderItemResource extends Resource
 {
@@ -23,19 +21,26 @@ class OrderItemResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('order_id')
+                Forms\Components\Select::make('order_id')
+                    ->label('Order')
+                    ->relationship('order', 'id') // Dropdown for orders
+                    ->required(),
+                Forms\Components\Select::make('menu_id')
+                    ->label('Menu')
+                    ->relationship('menu', 'name') // Dropdown for menus
                     ->required()
-                    ->numeric(),
-                Forms\Components\TextInput::make('menu_id')
-                    ->required()
-                    ->numeric(),
+                    ->reactive() // Make it reactive to update the price field
+                    ->afterStateUpdated(fn ($state, callable $set) => $set('price', Menu::find($state)?->price)), // Set price based on selected menu
                 Forms\Components\TextInput::make('quantity')
-                    ->required()
-                    ->numeric(),
-                Forms\Components\TextInput::make('price')
-                    ->required()
+                    ->label('Quantity')
                     ->numeric()
-                    ->prefix('$'),
+                    ->required(),
+                Forms\Components\TextInput::make('price')
+                    ->label('Price')
+                    ->numeric()
+                    ->prefix('IDR')
+                    // ->disabled()
+                    // ->dehydrated(false), // Prevent saving to the database
             ]);
     }
 
@@ -46,14 +51,14 @@ class OrderItemResource extends Resource
                 Tables\Columns\TextColumn::make('order_id')
                     ->numeric()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('menu_id')
-                    ->numeric()
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('menu.name') // Show menu name instead of ID
+                    ->label('Menu')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('quantity')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('price')
-                    ->money()
+                    ->money('IDR')
                     ->sortable(),
             ])
             ->filters([
@@ -63,9 +68,7 @@ class OrderItemResource extends Resource
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
+                Tables\Actions\DeleteBulkAction::make(),
             ]);
     }
 
@@ -82,6 +85,16 @@ class OrderItemResource extends Resource
             'index' => Pages\ListOrderItems::route('/'),
             'create' => Pages\CreateOrderItem::route('/create'),
             'edit' => Pages\EditOrderItem::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getNavigation(): array
+    {
+        return [
+            'label' => 'Order Items',
+            'icon' => 'heroicon-o-clipboard-document-list',
+            'group' => 'Manajemen Pesanan',
+            'sort' => 3,
         ];
     }
 }

@@ -98,4 +98,14 @@ class CourierResource extends Resource
             'edit' => Pages\EditCourier::route('/{record}/edit'),
         ];
     }
+
+    public static function getNavigation(): array
+    {
+        return [
+            'label' => 'Couriers',
+            'icon' => 'heroicon-o-user',
+            'group' => 'Pengiriman',
+            'sort' => 5,
+        ];
+    }
 }

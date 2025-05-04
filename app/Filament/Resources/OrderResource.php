@@ -3,36 +3,50 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\OrderResource\Pages;
-use App\Filament\Resources\OrderResource\RelationManagers;
 use App\Models\Order;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Resources\OrderResource\RelationManagers\OrderItemRelationManager;
 
 class OrderResource extends Resource
 {
     protected static ?string $model = Order::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
+    protected static ?string $navigationIcon = 'heroicon-o-receipt-refund';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('user_id')
-                    ->required()
-                    ->numeric(),
-                Forms\Components\TextInput::make('status')
+                Forms\Components\Select::make('user_id')
+                    ->label('User')
+                    ->searchable()
+                    ->getSearchResultsUsing(fn(string $search): array => User::where('role', 'customer')->where('name', 'like', "%{$search}%")->limit(50)->pluck('name', 'id')->toArray())
+                    ->getOptionLabelUsing(fn($value): ?string => User::find($value)?->name)
                     ->required(),
-                Forms\Components\TextInput::make('payment_method')
+                Forms\Components\Select::make('status')
+                    ->options([
+                        'pending' => 'Pending',
+                        'processing' => 'Processing',
+                        'delivered' => 'Delivered',
+                        'cancelled' => 'Cancelled',
+                    ])
+                    ->required(),
+                Forms\Components\Select::make('payment_method')
+                    ->options([
+                        'COD' => 'Cash on Delivery',
+                        'Transfer' => 'Bank Transfer',
+                        'QRIS' => 'QRIS',
+                    ])
                     ->required(),
                 Forms\Components\TextInput::make('total_price')
                     ->required()
-                    ->numeric(),
+                    ->numeric()
+                    ->prefix('IDR'),
                 Forms\Components\Textarea::make('delivery_address')
                     ->required()
                     ->columnSpanFull(),
@@ -43,15 +57,19 @@ class OrderResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('user_id')
-                    ->numeric()
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('user.name') // Show user name instead of ID
+                    ->label('User')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('status')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('payment_method')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('total_price')
-                    ->numeric()
+                    ->label('Total Price')
+                    ->getStateUsing(function ($record) {
+                        return $record->orderItems->sum(fn($item) => $item->price * $item->quantity);
+                    })
+                    ->money('IDR')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -69,16 +87,14 @@ class OrderResource extends Resource
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
+                Tables\Actions\DeleteBulkAction::make(),
             ]);
     }
 
     public static function getRelations(): array
     {
         return [
-            //
+          OrderItemRelationManager::class,
         ];
     }
 
@@ -88,6 +104,16 @@ class OrderResource extends Resource
             'index' => Pages\ListOrders::route('/'),
             'create' => Pages\CreateOrder::route('/create'),
             'edit' => Pages\EditOrder::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getNavigation(): array
+    {
+        return [
+            'label' => 'Orders',
+            'icon' => 'heroicon-o-receipt-refund',
+            'group' => 'Manajemen Pesanan',
+            'sort' => 2,
         ];
     }
 }
