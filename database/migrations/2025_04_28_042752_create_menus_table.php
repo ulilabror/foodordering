@@ -13,12 +13,16 @@ return new class extends Migration
     {
         Schema::create('menus', function (Blueprint $table) {
             $table->bigIncrements('id');
+            $table->unsignedBigInteger('category_id')->nullable(); 
             $table->string('name');
             $table->text('description')->nullable();
             $table->decimal('price', 10, 2);
             $table->boolean('is_available')->default(true);
             $table->string('image_path')->nullable();
             $table->timestamps();
+
+            // Relasi ke categories tanpa cascade
+            $table->foreign('category_id')->references('id')->on('categories')->nullOnDelete();
         });
     }
 

@@ -25,12 +25,14 @@ class DeliveryResource extends Resource
         return $form
             ->schema([
                 Select::make('order_id')
-                    ->relationship('order', 'id')
+                    ->relationship('order', 'id') // Dropdown untuk memilih order
                     ->label('Order')
                     ->required(),
                 Select::make('courier_id')
-                    ->relationship('courier', 'name')
                     ->label('Courier')
+                    ->relationship('courier', 'id') // Gunakan field apa saja sebagai placeholder
+                    ->getOptionLabelFromRecordUsing(fn($record) => $record->user->name ?? '-') // Ambil nama user dari model Courier
+                    ->searchable()
                     ->required(),
                 TextInput::make('delivery_fee')
                     ->label('Delivery Fee')
@@ -38,7 +40,7 @@ class DeliveryResource extends Resource
                     ->required(),
                 Select::make('delivery_status')
                     ->options([
-                        'pending' => 'Pending',
+                        'assigned' => 'Assigned',
                         'on_delivery' => 'On Delivery',
                         'delivered' => 'Delivered',
                     ])
@@ -51,17 +53,46 @@ class DeliveryResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('id')->label('ID')->sortable(),
-                TextColumn::make('order.id')->label('Order ID')->sortable(),
-                TextColumn::make('courier.name')->label('Courier')->sortable(),
-                TextColumn::make('delivery_fee')->label('Delivery Fee')->money('USD'),
-                TextColumn::make('delivery_status')->label('Status')->sortable(),
-                TextColumn::make('created_at')->label('Created At')->dateTime(),
+                TextColumn::make('id')
+                    ->label('ID')
+                    ->sortable(),
+                TextColumn::make('order.id')
+                    ->label('Order ID')
+                    ->sortable(),
+                TextColumn::make('courier.user.id')
+                    ->label('Courier User Id') // Menampilkan nama user dari courier
+                    ->sortable()
+                    ->searchable(),
+                TextColumn::make('courier.user.name')
+                    ->label('Courier Name') // Menampilkan nama user dari courier
+                    ->sortable()
+                    ->searchable(),  
+                TextColumn::make('courier.vehicle_type')
+                    ->label('Vehicle Type')
+                    ->sortable(),
+                TextColumn::make('courier.vehicle_plate')
+                    ->label('Vehicle Plate')
+                    ->sortable(),
+                TextColumn::make('delivery_fee')
+                    ->label('Delivery Fee')
+                    ->money('IDR') // Format sebagai mata uang
+                    ->sortable(),
+                TextColumn::make('delivery_status')
+                    ->label('Status')
+                    ->sortable(),
+                TextColumn::make('created_at')
+                    ->label('Created At')
+                    ->dateTime()
+                    ->sortable(),
+                TextColumn::make('updated_at')
+                    ->label('Updated At')
+                    ->dateTime()
+                    ->sortable(),
             ])
             ->filters([
                 SelectFilter::make('delivery_status')
                     ->options([
-                        'pending' => 'Pending',
+                        'assigned' => 'Assigned',
                         'on_delivery' => 'On Delivery',
                         'delivered' => 'Delivered',
                     ])

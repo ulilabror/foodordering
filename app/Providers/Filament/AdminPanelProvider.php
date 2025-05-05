@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Resources\CategoryResource;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -25,6 +26,7 @@ use App\Filament\Resources\OrderItemResource;
 use App\Filament\Resources\DeliveryResource;
 use App\Filament\Resources\CourierResource;
 use App\Filament\Resources\UserResource;
+
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -70,6 +72,7 @@ class AdminPanelProvider extends PanelProvider
                         // ->icon('heroicon-o-book-open')
                         ->items([
                             ...MenuResource::getNavigationItems(),
+                            ...CategoryResource::getNavigationItems(),
                         ]),
                     NavigationGroup::make('Manajemen Pesanan')
                         // ->icon('heroicon-o-receipt-refund')

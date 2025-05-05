@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('couriers', function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->text('address');
             $table->decimal('gps_latitude', 10, 6)->nullable();

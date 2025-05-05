@@ -30,6 +30,10 @@ class MenuResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\Select::make('category_id')
+                    ->label('Category')
+                    ->relationship('category', 'name') // Dropdown for categories
+                    ->required(),
                 Forms\Components\TextInput::make('name')
                     ->required(),
                 Forms\Components\Textarea::make('description')
@@ -49,6 +53,10 @@ class MenuResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('category.name') // Show category name
+                    ->label('Category')
+                    ->sortable()
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('price')

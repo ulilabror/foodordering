@@ -46,10 +46,14 @@ class OrderResource extends Resource
                 Forms\Components\TextInput::make('total_price')
                     ->required()
                     ->numeric()
-                    ->prefix('IDR'),
+                    ->prefix('IDR')
+                    ->default(fn($record) => $record && !$record->exists ? $record->orderItems->sum(fn($item) => $item->price * $item->quantity) : null)
+                    ->dehydrated(true)
+                    ->afterStateHydrated(fn($state, $record, $set) => $record ? $set('total_price', $record->orderItems->sum(fn($item) => $item->price * $item->quantity)) : null),
                 Forms\Components\Textarea::make('delivery_address')
                     ->required()
-                    ->columnSpanFull(),
+                    ->columnSpanFull()
+                    , // Only save if not empty
             ]);
     }
 

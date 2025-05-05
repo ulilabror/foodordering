@@ -36,19 +36,20 @@ class OrderItemRelationManager extends RelationManager
                     ->label('Quantity')
                     ->numeric()
                     ->required()
-                    ->reactive() // Make it reactive to trigger updates
-                    ->afterStateUpdated(function (callable $set, $state, $get) {
-                        $price = $get('price');
-                        if ($price) {
-                            $set('price', $price * $state); // Update price based on quantity
-                        }
-                    }),
+                    ->reactive(), // Make it reactive to trigger updates
+                    // ->afterStateUpdated(function (callable $set, $state, $get) {
+                    //     $price = $get('price');
+                    //     if ($price) {
+                    //         $set('price', $price * $state); // Update price based on quantity
+                    //     }
+                    // }),
                 TextInput::make('price')
                     ->label('Price')
                     ->numeric()
                     ->required()
                     ->disabled() // Disable manual editing of price
-                    ->dehydrated(true), // Ensure the value is saved to the database
+                    ->dehydrated(true) // Ensure the value is saved to the database
+                    ->default(fn ($get) => Menu::find($get('menu_id'))?->price), // Set default price from menu
             ]);
     }
 
