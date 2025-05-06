@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+// use App\Filament\Pages\Auth\Login;
 use App\Filament\Resources\CategoryResource;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -66,6 +67,7 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
                 // RedirectToProperPanelMiddleware::class,
             ])
+            ->profile()
             ->navigation(function (NavigationBuilder $builder): NavigationBuilder {
                 return $builder->groups([
                     NavigationGroup::make('Manajemen Menu')

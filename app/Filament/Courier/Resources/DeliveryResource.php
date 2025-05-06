@@ -1,18 +1,22 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Courier\Resources;
 
-use App\Filament\Resources\DeliveryResource\Pages;
+use App\Filament\Courier\Resources\DeliveryResource\Pages;
+use App\Filament\Courier\Resources\DeliveryResource\RelationManagers;
 use App\Models\Delivery;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Tables\Filters\SelectFilter;
+use function Laravel\Prompts\alert;
 
 class DeliveryResource extends Resource
 {
@@ -20,8 +24,7 @@ class DeliveryResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $label = 'penugasan kurir';
-
+    
     public static function form(Form $form): Form
     {
         return $form
@@ -32,12 +35,16 @@ class DeliveryResource extends Resource
                     ->required(),
 
                     // perbaiki kurir tidak seach available dan hanya tampilkan role kurir dan sedang online
-                Select::make('courier_id')
-                    ->label('Courier')
-                    ->relationship('courier', 'id') // Gunakan field apa saja sebagai placeholder
-                    ->getOptionLabelFromRecordUsing(fn($record) => $record->user->name ?? '-') // Ambil nama user dari model Courier
-                    ->searchable()
-                    ->required(),
+                    
+
+                    Select::make('courier_id')
+                        ->label('Courier')
+                        ->relationship('courier', 'id')
+                        ->getOptionLabelFromRecordUsing(fn($record) => $record->user->name ?? '-')
+                        ->default(fn() => auth()->user()->courier?->id) // harus id dari model Courier, bukan user_id
+                        ->required(),
+                    
+                
                 TextInput::make('delivery_fee')
                     ->label('Delivery Fee')
                     ->numeric()
@@ -113,7 +120,7 @@ class DeliveryResource extends Resource
     public static function getRelations(): array
     {
         return [
-            // Define relationships if needed, e.g., orders or couriers
+            //
         ];
     }
 
@@ -123,16 +130,6 @@ class DeliveryResource extends Resource
             'index' => Pages\ListDeliveries::route('/'),
             'create' => Pages\CreateDelivery::route('/create'),
             'edit' => Pages\EditDelivery::route('/{record}/edit'),
-        ];
-    }
-
-    public static function getNavigation(): array
-    {
-        return [
-            'label' => 'Deliveries',
-            'icon' => 'heroicon-o-truck',
-            'group' => 'Pengiriman',
-            'sort' => 4,
         ];
     }
 }

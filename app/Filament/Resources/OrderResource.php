@@ -12,6 +12,8 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use App\Filament\Resources\OrderResource\RelationManagers\OrderItemRelationManager;
 
+// pada order tambahkan kolom coordina dan latitude, alamat user, nomer hp
+
 class OrderResource extends Resource
 {
     protected static ?string $model = Order::class;

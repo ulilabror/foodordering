@@ -14,6 +14,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
+
 class CourierResource extends Resource
 {
     protected static ?string $model = Courier::class;
@@ -26,8 +27,14 @@ class CourierResource extends Resource
             ->schema([
                 Forms\Components\Select::make('user_id')
                     ->label('User')
+                    ->options(
+                        fn () => User::where('role', 'courier')
+                            ->limit(50)
+                            ->pluck('name', 'id')
+                            ->toArray()
+                    )
                     ->searchable()
-                    ->getSearchResultsUsing(fn(string $search): array => User::where('role', 'courier')->where('name', 'like', "%{$search}%")->limit(50)->pluck('name', 'id')->toArray())
+                    ->getSearchResultsUsing(fn(string $search): array => User::where('role', 'courier')->where('name', 'like', "%{$search}%")->limit(50)->get()->mapWithKeys(fn($user) => [$user->id => $user->name])->toArray())
                     ->getOptionLabelUsing(fn($value): ?string => User::find($value)?->name)
                     ->required(),
                 Forms\Components\Textarea::make('address')
