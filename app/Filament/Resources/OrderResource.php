@@ -12,8 +12,6 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use App\Filament\Resources\OrderResource\RelationManagers\OrderItemRelationManager;
 
-// pada order tambahkan kolom coordina dan latitude, alamat user, nomer hp
-
 class OrderResource extends Resource
 {
     protected static ?string $model = Order::class;
@@ -29,6 +27,7 @@ class OrderResource extends Resource
                     ->searchable()
                     ->getSearchResultsUsing(fn(string $search): array => User::where('role', 'customer')->where('name', 'like', "%{$search}%")->limit(50)->pluck('name', 'id')->toArray())
                     ->getOptionLabelUsing(fn($value): ?string => User::find($value)?->name)
+                    ->options(User::where('role', 'customer')->pluck('name', 'id')->toArray()) // Added options
                     ->required(),
                 Forms\Components\Select::make('status')
                     ->options([
@@ -46,16 +45,18 @@ class OrderResource extends Resource
                     ])
                     ->required(),
                 Forms\Components\TextInput::make('total_price')
+                    ->label('Total Price')
                     ->required()
                     ->numeric()
                     ->prefix('IDR')
-                    ->default(fn($record) => $record && !$record->exists ? $record->orderItems->sum(fn($item) => $item->price * $item->quantity) : null)
-                    ->dehydrated(true)
+                    ->default(fn($record) => $record && !$record->exists ? $record->orderItems->sum(fn($item) => $item->price * $item->quantity) : 0)
+                    ->disabled(fn($record) => $record && $record->exists) // Disabled for existing records
+                    ->dehydrated(true) // Ensures the value is saved to the database
+                    ->reactive()
                     ->afterStateHydrated(fn($state, $record, $set) => $record ? $set('total_price', $record->orderItems->sum(fn($item) => $item->price * $item->quantity)) : null),
                 Forms\Components\Textarea::make('delivery_address')
                     ->required()
-                    ->columnSpanFull()
-                    , // Only save if not empty
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -100,7 +101,7 @@ class OrderResource extends Resource
     public static function getRelations(): array
     {
         return [
-          OrderItemRelationManager::class,
+            OrderItemRelationManager::class,
         ];
     }
 

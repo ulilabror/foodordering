@@ -14,6 +14,16 @@ class EditOrder extends EditRecord
     {
         return [
             Actions\DeleteAction::make(),
+            Actions\Action::make('refreshTotal')
+                ->label('Refresh')
+                ->action(fn() => $this->refreshTotal())
+
         ];
+    }
+
+    protected function refreshTotal(): void
+    {
+        $this->record->total_price = $this->record->orderItems->sum(fn($item) => $item->price * $item->quantity);
+        $this->record->save();
     }
 }

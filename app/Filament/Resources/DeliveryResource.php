@@ -27,15 +27,31 @@ class DeliveryResource extends Resource
         return $form
             ->schema([
                 Select::make('order_id')
-                    ->relationship('order', 'id') // Dropdown untuk memilih order
                     ->label('Order')
+                    ->options(function () {
+                        return \App\Models\Order::with('user')
+                            ->get()
+                            ->mapWithKeys(function ($order) {
+                                return [$order->id => "Order #{$order->id} - {$order->user->name}"];
+                            })
+                            ->toArray();
+                    }) // Menampilkan nama user yang memesan
+                    ->searchable()
                     ->required(),
 
-                    // perbaiki kurir tidak seach available dan hanya tampilkan role kurir dan sedang online
                 Select::make('courier_id')
                     ->label('Courier')
-                    ->relationship('courier', 'id') // Gunakan field apa saja sebagai placeholder
-                    ->getOptionLabelFromRecordUsing(fn($record) => $record->user->name ?? '-') // Ambil nama user dari model Courier
+                    ->options(function () {
+                        return \App\Models\Courier::with('user')
+                            // ->whereHas('user', function ($query) {
+                            //     $query->where('is_online', true); // Hanya kurir yang sedang online
+                            // })
+                            ->get()
+                            ->mapWithKeys(function ($courier) {
+                                return [$courier->id => "{$courier->user->name}"];
+                            })
+                            ->toArray();
+                    }) // Menampilkan nama kurir
                     ->searchable()
                     ->required(),
                 TextInput::make('delivery_fee')

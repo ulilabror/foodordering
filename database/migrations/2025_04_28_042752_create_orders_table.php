@@ -18,6 +18,8 @@ return new class extends Migration
             $table->enum('payment_method', ['COD', 'Transfer', 'QRIS']);
             $table->decimal('total_price', 10, 2);
             $table->text('delivery_address');
+            $table->decimal('gps_latitude', 10, 6)->nullable()->after('delivery_address'); // Latitude
+            $table->decimal('gps_longitude', 10, 6)->nullable()->after('gps_latitude'); // Longitude
             $table->timestamps();
         });
     }

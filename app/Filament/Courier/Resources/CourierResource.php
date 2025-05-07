@@ -26,11 +26,25 @@ class CourierResource extends Resource
     {
         return $form->schema([
             Forms\Components\Textarea::make('address')->required(),
-            Forms\Components\TextInput::make('gps_latitude')->numeric(),
-            Forms\Components\TextInput::make('gps_longitude')->numeric(),
+            Forms\Components\TextInput::make('gps_latitude')
+                ->label('Latitude')
+                ->required()
+                ->numeric()
+                ->readOnly(),
+            Forms\Components\TextInput::make('gps_longitude')
+                ->label('Longitude')
+                ->required()
+                ->numeric()
+                ->readOnly(),
+            Forms\Components\ViewField::make('gps_map')
+                ->label('Pilih Lokasi')
+                ->view('components.fields.gps-picker')
+                ->columnSpanFull(),
+            
             Forms\Components\TextInput::make('vehicle_type')->required(),
             Forms\Components\TextInput::make('vehicle_plate')->required(),
             Forms\Components\Toggle::make('is_partner')->required(),
+
         ]);
     }
 
@@ -41,14 +55,14 @@ class CourierResource extends Resource
             'create' => Pages\CreateCourier::route('/create'),
         ];
     }
-    
+
 
     public static function getNavigationUrl(): string
-{
-    return static::getUrl('create');
-}
+    {
+        return static::getUrl('create');
+    }
 
-    
+
 
     public static function getModelLabel(): string
     {

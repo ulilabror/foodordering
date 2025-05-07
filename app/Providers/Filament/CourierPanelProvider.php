@@ -3,11 +3,13 @@
 namespace App\Providers\Filament;
 
 
+use App\Filament\Courier\Resources\OrderResource;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages;
+use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -40,7 +42,7 @@ class CourierPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/Courier/Resources'), for: 'App\\Filament\\Courier\\Resources')
             ->discoverPages(in: app_path('Filament/Courier/Pages'), for: 'App\\Filament\\Courier\\Pages')
             ->pages([
-                Pages\Dashboard::class,
+                Dashboard::class
             ])
             ->discoverWidgets(in: app_path('Filament/Courier/Widgets'), for: 'App\\Filament\\Courier\\Widgets')
             ->widgets([
@@ -67,18 +69,15 @@ class CourierPanelProvider extends PanelProvider
                         ->items([
                             ...CourierResource::getNavigationItems(),
                         ]) ,
-                    NavigationGroup::make('registration courier')
-                        // ->icon('heroicon-o-book-open')
-                        ->items([
-                            ...CourierResource::getNavigationItems(),
-                            // ...CategoryResource::getNavigationItems(),
-                        ]),
-                    NavigationGroup::make('Jobs')
+                   auth()->user()?->courier 
+                        ?  NavigationGroup::make('Menu')
                         // ->icon('heroicon-o-truck')
                         ->items([
                             ...DeliveryResource::getNavigationItems(),
+                            ...OrderResource::getNavigationItems(),
                             // ...CourierResource::getNavigationItems(),
-                        ]),
+                        ]): null ,
+                    // NavigationGroup::make('')
                 ]));
             })
             ->authMiddleware([

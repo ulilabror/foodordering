@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('deliveries', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->foreignId('order_id')->constrained('orders')->onDelete('cascade');
-            $table->foreignId('courier_id')->constrained('couriers')->onDelete('cascade');
+            $table->foreignId('courier_id')->nullable()->constrained('couriers')->onDelete('cascade');
             $table->decimal('delivery_fee', 10, 2);
-            $table->enum('delivery_status', ['assigned', 'on_delivery', 'delivered']);
+            $table->enum('delivery_status', ['assigned', 'on_delivery', 'delivered'])->nullable();
             $table->timestamps();
         });
     }

@@ -3,59 +3,49 @@
 namespace App\Filament\Courier\Resources;
 
 use App\Filament\Courier\Resources\DeliveryResource\Pages;
-use App\Filament\Courier\Resources\DeliveryResource\RelationManagers;
 use App\Models\Delivery;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Tables\Filters\SelectFilter;
-use function Laravel\Prompts\alert;
 
 class DeliveryResource extends Resource
 {
     protected static ?string $model = Delivery::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-truck';
 
-    
+    protected static ?string $navigationLabel = 'Pengiriman';
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Select::make('order_id')
-                    ->relationship('order', 'id') // Dropdown untuk memilih order
-                    ->label('Order')
+                    ->relationship('order', 'id')
+                    ->label('ID Pesanan')
                     ->required(),
-
-                    // perbaiki kurir tidak seach available dan hanya tampilkan role kurir dan sedang online
-                    
-
-                    Select::make('courier_id')
-                        ->label('Courier')
-                        ->relationship('courier', 'id')
-                        ->getOptionLabelFromRecordUsing(fn($record) => $record->user->name ?? '-')
-                        ->default(fn() => auth()->user()->courier?->id) // harus id dari model Courier, bukan user_id
-                        ->required(),
-                    
-                
-                TextInput::make('delivery_fee')
-                    ->label('Delivery Fee')
+                Select::make('courier_id')
+                    ->label('Kurir')
+                    ->relationship('courier', 'id')
+                    ->getOptionLabelFromRecordUsing(fn($record) => $record->user->name ?? '-')
+                    ->default(fn() => auth()->user()->courier?->id)
+                    ->required(),
+                Forms\Components\TextInput::make('delivery_fee')
+                    ->label('Biaya Pengiriman')
                     ->numeric()
                     ->required(),
                 Select::make('delivery_status')
                     ->options([
-                        'assigned' => 'Assigned',
-                        'on_delivery' => 'On Delivery',
-                        'delivered' => 'Delivered',
+                        'assigned' => 'Ditugaskan',
+                        'on_delivery' => 'Sedang Dikirim',
+                        'delivered' => 'Terkirim',
                     ])
-                    ->label('Delivery Status')
+                    ->label('Status Pengiriman')
                     ->required(),
             ]);
     }
@@ -65,52 +55,82 @@ class DeliveryResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('id')
-                    ->label('ID')
+                    ->label('ID Pengiriman')
                     ->sortable(),
                 TextColumn::make('order.id')
-                    ->label('Order ID')
+                    ->label('ID Pesanan')
                     ->sortable(),
-                TextColumn::make('courier.user.id')
-                    ->label('Courier User Id') // Menampilkan nama user dari courier
+                TextColumn::make('order.user.name')
+                    ->label('Nama Pelanggan') // Menampilkan nama pelanggan
                     ->sortable()
                     ->searchable(),
                 TextColumn::make('courier.user.name')
-                    ->label('Courier Name') // Menampilkan nama user dari courier
+                    ->label('Nama Kurir')
                     ->sortable()
-                    ->searchable(),  
-                TextColumn::make('courier.vehicle_type')
-                    ->label('Vehicle Type')
-                    ->sortable(),
-                TextColumn::make('courier.vehicle_plate')
-                    ->label('Vehicle Plate')
-                    ->sortable(),
+                    ->searchable(),
                 TextColumn::make('delivery_fee')
-                    ->label('Delivery Fee')
-                    ->money('IDR') // Format sebagai mata uang
+                    ->label('Biaya Pengiriman')
+                    ->money('IDR')
                     ->sortable(),
                 TextColumn::make('delivery_status')
-                    ->label('Status')
+                    ->label('Status Pengiriman')
                     ->sortable(),
                 TextColumn::make('created_at')
-                    ->label('Created At')
+                    ->label('Dibuat Pada')
                     ->dateTime()
                     ->sortable(),
                 TextColumn::make('updated_at')
-                    ->label('Updated At')
+                    ->label('Diperbarui Pada')
                     ->dateTime()
                     ->sortable(),
             ])
             ->filters([
                 SelectFilter::make('delivery_status')
                     ->options([
-                        'assigned' => 'Assigned',
-                        'on_delivery' => 'On Delivery',
-                        'delivered' => 'Delivered',
+                        'assigned' => 'Ditugaskan',
+                        'on_delivery' => 'Sedang Dikirim',
+                        'delivered' => 'Terkirim',
                     ])
-                    ->label('Delivery Status'),
+                    ->label('Filter Status Pengiriman'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('ambilPengiriman')
+                    ->label('Ambil Pengiriman')
+                    ->action(function ($record) {
+                        $record->update([
+                            'courier_id' => auth()->user()->courier?->id, // Tetapkan kurir yang sedang login
+                            'delivery_status' => 'assigned', // Ubah status menjadi "Ditugaskan"
+                        ]);
+                    })
+                    ->requiresConfirmation()
+                    ->color('primary')
+                    ->visible(fn ($record) => $record->delivery_status === null), // Tampilkan hanya jika status belum diatur
+                Tables\Actions\Action::make('mulaiPengiriman')
+                    ->label('Mulai Pengiriman')
+                    ->action(function ($record) {
+                        $record->update([
+                            'delivery_status' => 'on_delivery',
+                        ]);
+                    })
+                    ->requiresConfirmation()
+                    ->color('warning')
+                    ->visible(fn ($record) => $record->delivery_status === 'assigned'), // Tampilkan hanya jika status "Ditugaskan"
+                Tables\Actions\Action::make('selesaikanPengiriman')
+                    ->label('Selesaikan Pengiriman')
+                    ->action(function ($record) {
+                        $record->update([
+                            'delivery_status' => 'delivered',
+                        ]);
+
+                        // Update status pesanan (orders.status) menjadi 'delivered'
+                        $record->order->update([
+                            'status' => 'delivered',
+                        ]);
+                    })
+                    ->requiresConfirmation()
+                    ->color('success')
+                    ->visible(fn ($record) => $record->delivery_status === 'on_delivery'), // Tampilkan hanya jika status "Sedang Dikirim"
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
@@ -119,9 +139,7 @@ class DeliveryResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array

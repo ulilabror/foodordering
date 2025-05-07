@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\OrderResource\RelationManagers;
 
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Menu;
 use Filament\Forms;
 use Filament\Forms\Components\Select;
@@ -13,93 +15,71 @@ use Filament\Tables\Columns\TextColumn;
 
 class OrderItemRelationManager extends RelationManager
 {
-    protected static string $relationship = 'orderItems'; // Define the relationship name
+    protected static string $relationship = 'orderItems';
 
-    protected static ?string $recordTitleAttribute = 'order_id';
+    protected static ?string $recordTitleAttribute = 'id';
 
-    public function form(Forms\Form $form): Forms\Form // Removed static keyword
+    public function form(Forms\Form $form): Forms\Form
     {
         return $form
             ->schema([
                 Select::make('menu_id')
                     ->label('Menu')
-                    ->relationship('menu', 'name') // Dropdown for menus
+                    ->relationship('menu', 'name')
                     ->required()
-                    ->reactive() // Make it reactive to trigger updates
-                    ->afterStateUpdated(function (callable $set, $state) {
-                        $menu = Menu::find($state);
-                        if ($menu) {
-                            $set('price', $menu->price); // Set price based on selected menu
-                        }
-                    }),
+                    ->reactive()
+                    ->afterStateUpdated(fn ($state, callable $set) => $set('price', Menu::find($state)?->price)),
                 TextInput::make('quantity')
                     ->label('Quantity')
                     ->numeric()
                     ->required()
-                    ->reactive(), // Make it reactive to trigger updates
-                    // ->afterStateUpdated(function (callable $set, $state, $get) {
-                    //     $price = $get('price');
-                    //     if ($price) {
-                    //         $set('price', $price * $state); // Update price based on quantity
-                    //     }
-                    // }),
+                    ->reactive()
+                    ->afterStateUpdated(fn ($state, callable $set) => $set('total_price',$this->updateOrderTotalPrice()?->total_price)),
                 TextInput::make('price')
                     ->label('Price')
                     ->numeric()
                     ->required()
-                    ->disabled() // Disable manual editing of price
-                    ->dehydrated(true) // Ensure the value is saved to the database
-                    ->default(fn ($get) => Menu::find($get('menu_id'))?->price), // Set default price from menu
+                    ->disabled()
+                    ->dehydrated(true)
+                    ->default(fn ($get) => Menu::find($get('menu_id'))?->price),
             ]);
     }
 
-    public function table(Tables\Table $table): Tables\Table // Removed static keyword
+    public function table(Tables\Table $table): Tables\Table
     {
         return $table
             ->columns([
-                TextColumn::make('menu.name') // Show menu name
-                    ->label('Menu')
-                    ->searchable(),
-                TextColumn::make('quantity')
-                    ->label('Quantity')
-                    ->sortable(),
-                TextColumn::make('price')
-                    ->label('Price')
-                    ->money('IDR')
-                    ->sortable(),
-                TextColumn::make('created_at')
-                    ->label('Created At')
-                    ->dateTime()
-                    ->sortable(),
+                TextColumn::make('menu.name')->label('Menu')->searchable(),
+                TextColumn::make('quantity')->label('Quantity')->sortable(),
+                TextColumn::make('price')->label('Price')->money('IDR')->sortable(),
+                TextColumn::make('created_at')->label('Created At')->dateTime()->sortable(),
             ])
-            ->filters([
-                //
-            ])
+            ->filters([])
             ->headerActions([
                 Tables\Actions\CreateAction::make(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
-                // Tables\Actions\CreateAction::make()
-                //     ->label('Add Menu Item')
-                //     ->form([
-                //         Select::make('menu_id')
-                //             ->label('Menu')
-                //             ->relationship('menu', 'name') // Dropdown for menus
-                //             ->required(),
-                //         TextInput::make('quantity')
-                //             ->label('Quantity')
-                //             ->numeric()
-                //             ->required(),
-                //         TextInput::make('price')
-                //             ->label('Price')
-                //             ->numeric()
-                //             ->required(),
-                //     ]),
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
             ]);
+    }
+
+    protected function afterSave(): void
+    {
+        $this->updateOrderTotalPrice();
+    }
+
+    protected function afterDelete(): void
+    {
+        $this->updateOrderTotalPrice();
+    }
+
+    private function updateOrderTotalPrice(): void
+    {
+        $order = $this->ownerRecord; // Access the parent Order record
+        $order->recalculateTotalPrice(); // Call the recalculateTotalPrice method from the Order model
     }
 }
