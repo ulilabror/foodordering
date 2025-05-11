@@ -19,9 +19,14 @@ class OrderResource extends Resource
     protected static ?string $model = Order::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-    
+
     //buatkan label
-    protected static ?string $navigationLabel = 'Riwayat Order ';
+    protected static ?string $navigationLabel = 'Riwayat Pengiriman ';
+
+    public static function canCreate(): bool
+    {
+        return false; // Ini akan menyembunyikan tombol "+ Create"
+    }
 
     public static function form(Form $form): Form
     {
@@ -32,7 +37,8 @@ class OrderResource extends Resource
                     ->searchable()
                     ->getSearchResultsUsing(fn(string $search): array => User::where('role', 'customer')->where('name', 'like', "%{$search}%")->limit(50)->pluck('name', 'id')->toArray())
                     ->getOptionLabelUsing(fn($value): ?string => User::find($value)?->name)
-                    ->required(),
+                    ->required()
+                    ->disabled(), // Disable this field
                 Forms\Components\Select::make('status')
                     ->options([
                         'pending' => 'Pending',
@@ -40,27 +46,27 @@ class OrderResource extends Resource
                         'delivered' => 'Delivered',
                         'cancelled' => 'Cancelled',
                     ])
-                    ->required(),
+                    ->required()
+                    ->disabled(), // Disable this field
                 Forms\Components\Select::make('payment_method')
                     ->options([
                         'COD' => 'Cash on Delivery',
                         'Transfer' => 'Bank Transfer',
                         'QRIS' => 'QRIS',
                     ])
-                    ->required(),
+                    ->required()
+                    ->disabled(), // Disable this field
                 Forms\Components\TextInput::make('total_price')
                     ->label('Total Price')
                     ->required()
                     ->numeric()
                     ->prefix('IDR')
-                    ->default(fn($record) => $record && !$record->exists ? $record->orderItems->sum(fn($item) => $item->price * $item->quantity) : 0)
-                    ->dehydrated(true) // Ensures the value is saved to the database
-                    ->disabled(fn($record) => $record && $record->exists) // Disabled for existing records
-                    ->afterStateHydrated(fn($state, $record, $set) => $record ? $set('total_price', $record->orderItems->sum(fn($item) => $item->price * $item->quantity)) : null),
-                Forms\Components\Textarea::make('delivery_address')
+                    ->disabled(), // Disable this field
+                Forms\Components\Textarea::make('delivery.address')
+                    ->label('Delivery Address')
                     ->required()
                     ->columnSpanFull()
-                    , // Only save if not empty
+                    ->disabled(), // Disable this field
             ]);
     }
 
@@ -68,63 +74,100 @@ class OrderResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('user.name') // Show user name instead of ID
+                Tables\Columns\TextColumn::make('user.id') // Menampilkan ID pengguna
+                    ->label('User ID')
+                    ->sortable()
+                    ->searchable()
+                    ->url(null), // Nonaktifkan klik
+                Tables\Columns\TextColumn::make('user.name') // Menampilkan nama pengguna
                     ->label('User')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('status')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('payment_method')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('total_price')
+                    ->searchable()
+                    ->url(null), // Nonaktifkan klik
+                Tables\Columns\BadgeColumn::make('status') // Menampilkan status pesanan dengan badge
+                    ->label('Status')
+                    ->sortable()
+                    ->colors([
+                        'primary' => 'pending',
+                        'warning' => 'processing',
+                        'success' => 'delivered',
+                        'danger' => 'cancelled',
+                    ])
+                    ->url(null), // Nonaktifkan klik
+                Tables\Columns\TextColumn::make('payment_method') // Menampilkan metode pembayaran
+                    ->label('Payment Method')
+                    ->searchable()
+                    ->url(null), // Nonaktifkan klik
+                Tables\Columns\TextColumn::make('total_price') // Menampilkan total harga
                     ->label('Total Price')
                     ->getStateUsing(function ($record) {
                         return $record->orderItems->sum(fn($item) => $item->price * $item->quantity);
                     })
                     ->money('IDR')
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('created_at')
+                    ->sortable()
+                    ->url(null), // Nonaktifkan klik
+                Tables\Columns\TextColumn::make('delivery.delivery_fee') // Menampilkan biaya pengiriman
+                    ->label('Delivery Fee')
+                    ->money('IDR')
+                    ->sortable()
+                    ->url(null), // Nonaktifkan klik
+                Tables\Columns\TextColumn::make('created_at') // Menampilkan waktu pembuatan pesanan
+                    ->label('Created At')
                     ->dateTime()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
+                    ->url(null), // Nonaktifkan klik
+                Tables\Columns\TextColumn::make('updated_at') // Menampilkan waktu pembaruan pesanan
+                    ->label('Updated At')
                     ->dateTime()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->url(null), // Nonaktifkan klik
             ])
             ->filters([
                 //
             ])
+            ->modifyQueryUsing(function (Builder $query) {
+                $user = auth()->user();
+
+                // Jika user adalah kurir
+                if ($user->courier) {
+                    $query->whereHas('delivery', function ($query) use ($user) {
+                        $query->where('courier_id', $user->courier->id); // Hanya pengiriman milik kurir ini
+                    })->whereIn('status', ['delivered', 'cancelled']); // Tampilkan pesanan dengan status "delivered" atau "cancelled"
+                } else {
+                    // Jika bukan kurir, tampilkan semua data dengan status "delivered" atau "cancelled"
+                    $query->whereIn('status', ['delivered', 'cancelled']); // Tampilkan pesanan dengan status "delivered" atau "cancelled"
+                }
+            })
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('ambilOrder')
-                    ->label('Ambil Order')
-                    ->form([
-                        Forms\Components\Select::make('status')
-                            ->label('Status')
-                            ->options([
-                                'processing' => 'Processing',
-                                'delivered' => 'Delivered',
-                                'cancelled' => 'Cancelled',
-                            ])
-                            ->required(),
-                    ])
-                    ->action(function ($record, array $data) {
-                        // Update the status of the order
-                        $record->status = $data['status'];
-                        $record->save();
-                    })
-                    ->requiresConfirmation()
-                    ->color('success'),
+                // Tables\Actions\EditAction::make(),
+                // Tables\Actions\Action::make('ambilOrder')
+                //     ->label('Ambil Order')
+                //     ->form([
+                //         Forms\Components\Select::make('status')
+                //             ->label('Status')
+                //             ->options([
+                //                 'processing' => 'Processing',
+                //                 'delivered' => 'Delivered',
+                //                 'cancelled' => 'Cancelled',
+                //             ])
+                //             ->required(),
+                //     ])
+                //     ->action(function ($record, array $data) {
+                //         // Update the status of the order
+                //         $record->status = $data['status'];
+                //         $record->save();
+                //     })
+                //     ->requiresConfirmation()
+                //     ->color('success'),
             ])
             ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make(),
+                // Tables\Actions\DeleteBulkAction::make(),
             ]);
     }
 
     public static function getRelations(): array
     {
         return [
-        //   OrderItemRelationManager::class,
+            //   OrderItemRelationManager::class,
         ];
     }
 
@@ -136,6 +179,4 @@ class OrderResource extends Resource
             'edit' => Pages\EditOrder::route('/{record}/edit'),
         ];
     }
-
-  
 }

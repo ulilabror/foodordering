@@ -21,35 +21,88 @@ class DeliveryResource extends Resource
 
     protected static ?string $navigationLabel = 'Pengiriman';
 
-    public static function form(Form $form): Form
+    public static function canCreate(): bool
     {
-        return $form
-            ->schema([
-                Select::make('order_id')
-                    ->relationship('order', 'id')
-                    ->label('ID Pesanan')
-                    ->required(),
-                Select::make('courier_id')
-                    ->label('Kurir')
-                    ->relationship('courier', 'id')
-                    ->getOptionLabelFromRecordUsing(fn($record) => $record->user->name ?? '-')
-                    ->default(fn() => auth()->user()->courier?->id)
-                    ->required(),
-                Forms\Components\TextInput::make('delivery_fee')
-                    ->label('Biaya Pengiriman')
-                    ->numeric()
-                    ->required(),
-                Select::make('delivery_status')
-                    ->options([
-                        'assigned' => 'Ditugaskan',
-                        'on_delivery' => 'Sedang Dikirim',
-                        'delivered' => 'Terkirim',
-                    ])
-                    ->label('Status Pengiriman')
-                    ->required(),
-            ]);
+        return false; // Ini akan menyembunyikan tombol "+ Create"
     }
 
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return true; // Ini akan menyembunyikan tombol "Edit"
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return false; // Ini akan menyembunyikan tombol "Delete"
+    }
+
+    public static function form(Form $form): Form
+    {
+        return $form->schema([
+            // Atribut dari model Delivery
+            Forms\Components\TextInput::make('id')
+                ->label('Delivery ID')
+                ->disabled(), // Read-only
+            Forms\Components\Select::make('order_id')
+                ->label('Order')
+                ->relationship('order', 'id') // Relasi ke model Order
+                // ->getOptionLabelUsing(fn ($value) => \App\Models\Order::find($value)?->user->name ?? 'Unknown')
+                ->disabled(), // Read-only
+            Forms\Components\Select::make('courier_id')
+                ->label('Courier')
+                // ->relationship('courier', 'user.name') // Relasi ke model Courier
+                ->disabled(), // Read-only
+            Forms\Components\TextInput::make('delivery_fee')
+                ->label('Delivery Fee')
+                ->numeric()
+                ->disabled(), // Read-only
+            Forms\Components\Select::make('delivery_status')
+                ->label('Delivery Status')
+                ->options([
+                    'assigned' => 'Assigned',
+                    'on_delivery' => 'On Delivery',
+                    'delivered' => 'Delivered',
+                    'cancelled' => 'Cancelled',
+                ])
+                ->disabled(), // Read-only
+            Forms\Components\TextInput::make('created_at')
+                ->label('Created At')
+                ->disabled(), // Read-only
+            Forms\Components\TextInput::make('updated_at')
+                ->label('Updated At')
+                ->disabled(), // Read-only
+                
+
+
+            // // Relasi ke model Order
+            // Forms\Components\Group::make([
+            //     Forms\Components\TextInput::make('order.user.name')
+            //         ->label('Customer Name')
+            //         ->disabled(), // Read-only
+            //     Forms\Components\TextInput::make('order.total_price')
+            //         ->label('Total Price')
+            //         ->numeric()
+            //         ->disabled(), // Read-only
+            //     Forms\Components\Textarea::make('order.delivery_address')
+            //         ->label('Delivery Address')
+            //         ->disabled(), // Read-only
+            // ])->columnSpanFull(),
+
+            // // Relasi ke model Courier
+            // Forms\Components\Group::make([
+            //     Forms\Components\TextInput::make('courier.user.name')
+            //         ->label('Courier Name')
+            //         ->disabled(), // Read-only
+            //     Forms\Components\TextInput::make('courier.vehicle_type')
+            //         ->label('Vehicle Type')
+            //         ->disabled(), // Read-only
+            //     Forms\Components\TextInput::make('courier.vehicle_plate')
+            //         ->label('Vehicle Plate')
+            //         ->disabled(), // Read-only
+            // ])->columnSpanFull(),
+        ]);
+    }
+    
     public static function table(Table $table): Table
     {
         return $table
@@ -64,17 +117,30 @@ class DeliveryResource extends Resource
                     ->label('Nama Pelanggan') // Menampilkan nama pelanggan
                     ->sortable()
                     ->searchable(),
+                TextColumn::make('order.delivery.address')
+                    ->label('Alamat Pengiriman') // Menampilkan alamat pengiriman
+                    ->sortable()
+                    ->searchable(),
                 TextColumn::make('courier.user.name')
                     ->label('Nama Kurir')
                     ->sortable()
                     ->searchable(),
+                TextColumn::make('order.total_price')
+                    ->label('Total Harga') // Menampilkan total harga dari tabel orders
+                    ->money('IDR') // Format sebagai mata uang
+                    ->sortable(),
                 TextColumn::make('delivery_fee')
                     ->label('Biaya Pengiriman')
                     ->money('IDR')
                     ->sortable(),
                 TextColumn::make('delivery_status')
-                    ->label('Status Pengiriman')
-                    ->sortable(),
+                    ->badge()
+                    ->colors([
+                        'secondary' => 'assigned',
+                        'warning' => 'on_delivery',
+                        'success' => 'delivered',
+                    ])
+                    ->label('Status'),
                 TextColumn::make('created_at')
                     ->label('Dibuat Pada')
                     ->dateTime()
@@ -93,8 +159,11 @@ class DeliveryResource extends Resource
                     ])
                     ->label('Filter Status Pengiriman'),
             ])
+            ->modifyQueryUsing(function (\Illuminate\Database\Eloquent\Builder $query) {
+                $user = auth()->user();
+                $query->visibleToCourier($user);
+            })
             ->actions([
-                Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('ambilPengiriman')
                     ->label('Ambil Pengiriman')
                     ->action(function ($record) {
@@ -131,9 +200,24 @@ class DeliveryResource extends Resource
                     ->requiresConfirmation()
                     ->color('success')
                     ->visible(fn ($record) => $record->delivery_status === 'on_delivery'), // Tampilkan hanya jika status "Sedang Dikirim"
+                Tables\Actions\Action::make('batalkanPengiriman')
+                    ->label('Batalkan Pengiriman')
+                    ->action(function ($record) {
+                        $record->update([
+                            'delivery_status' => null, // Ubah status menjadi "Dibatalkan"
+                        ]);
+
+                        // Update status pesanan (orders.status) menjadi 'cancelled'
+                        $record->order->update([
+                            'status' => 'cancelled',
+                        ]);
+                    })
+                    ->requiresConfirmation()
+                    ->color('danger')
+                    ->visible(fn ($record) => in_array($record->delivery_status, ['assigned', 'on_delivery'])), // Tampilkan hanya jika status "Ditugaskan" atau "Sedang Dikirim"
             ])
             ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make(),
+                // Tables\Actions\DeleteBulkAction::make(),
             ]);
     }
 

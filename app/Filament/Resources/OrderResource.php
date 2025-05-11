@@ -53,10 +53,15 @@ class OrderResource extends Resource
                     ->disabled(fn($record) => $record && $record->exists) // Disabled for existing records
                     ->dehydrated(true) // Ensures the value is saved to the database
                     ->reactive()
+                    ->hidden(fn($state) => $state === 0 || $state === null) // Hide when value is 0 or null
                     ->afterStateHydrated(fn($state, $record, $set) => $record ? $set('total_price', $record->orderItems->sum(fn($item) => $item->price * $item->quantity)) : null),
-                Forms\Components\Textarea::make('delivery_address')
+                Forms\Components\Textarea::make('delivery.address')
+                    ->label('Delivery Address')
                     ->required()
-                    ->columnSpanFull(),
+                    ->columnSpanFull()
+                    ->saveRelationshipsUsing(function ($record, $state) {
+                        $record->delivery->update(['address' => $state]);
+                    }),
             ]);
     }
 
@@ -64,25 +69,29 @@ class OrderResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('user.name') // Show user name instead of ID
+                Tables\Columns\TextColumn::make('id') // Menampilkan ID Pesanan
+                    ->label('Pesanan ID')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('user.name') // Menampilkan nama pengguna
                     ->label('User')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('status')
+                Tables\Columns\TextColumn::make('status') // Menampilkan status pesanan
                     ->searchable(),
-                Tables\Columns\TextColumn::make('payment_method')
+                Tables\Columns\TextColumn::make('payment_method') // Menampilkan metode pembayaran
                     ->searchable(),
-                Tables\Columns\TextColumn::make('total_price')
+                Tables\Columns\TextColumn::make('total_price') // Menampilkan total harga
                     ->label('Total Price')
                     ->getStateUsing(function ($record) {
                         return $record->orderItems->sum(fn($item) => $item->price * $item->quantity);
                     })
                     ->money('IDR')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('created_at')
+                Tables\Columns\TextColumn::make('created_at') // Menampilkan waktu pembuatan pesanan
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
+                Tables\Columns\TextColumn::make('updated_at') // Menampilkan waktu pembaruan pesanan
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

@@ -16,10 +16,10 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->enum('status', ['pending', 'processing', 'delivered', 'cancelled']);
             $table->enum('payment_method', ['COD', 'Transfer', 'QRIS']);
-            $table->decimal('total_price', 10, 2);
-            $table->text('delivery_address');
-            $table->decimal('gps_latitude', 10, 6)->nullable()->after('delivery_address'); // Latitude
-            $table->decimal('gps_longitude', 10, 6)->nullable()->after('gps_latitude'); // Longitude
+            $table->decimal('total_price', 10, 2)->nullable()->default(0);
+            // $table->text('delivery_address');
+            // $table->decimal('latitude', 10, 8)->nullable(); // Add latitude column
+            // $table->decimal('longitude', 11, 8)->nullable(); // Add longitude column
             $table->timestamps();
         });
     }

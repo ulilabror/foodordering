@@ -12,7 +12,8 @@
       <div class="container aos-init aos-animate" data-aos="fade-up" data-aos-delay="100" bis_skin_checked="1">
 
         <div class="mb-5" bis_skin_checked="1">
-          <iframe style="width: 100%; height: 400px;" src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d12097.433213460943!2d-74.0062269!3d40.7101282!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0xb89d1fe6bc499443!2sDowntown+Conference+Center!5e0!3m2!1smk!2sbg!4v1539943755621" frameborder="0" allowfullscreen=""></iframe>
+          <iframe style="width: 100%; height: 400px;" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d904.2218716928458!2d110.86616980043193!3d-6.7849215130664104!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e70dad011b861e1%3A0xded15e85b4e6c83c!2sFakultas%20Teknik%20-%20UMK!5e0!3m2!1sid!2sid!4v1746730359492!5m2!1sid!2sid" frameborder="0" allowfullscreen=""></iframe>
+            
         </div><!-- End Google Maps -->
 
         <div class="row gy-4" bis_skin_checked="1">

@@ -25,4 +25,19 @@ class OrderItem extends Model
     {
         return $this->belongsTo(Menu::class);
     }
+
+    // Boot method to listen for model events
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Update total_price on create, update, or delete
+        static::saved(function ($orderItem) {
+            $orderItem->order->recalculateTotalPrice();
+        });
+
+        static::deleted(function ($orderItem) {
+            $orderItem->order->recalculateTotalPrice();
+        });
+    }
 }

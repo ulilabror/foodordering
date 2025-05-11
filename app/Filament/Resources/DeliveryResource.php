@@ -79,14 +79,22 @@ class DeliveryResource extends Resource
                 TextColumn::make('order.id')
                     ->label('Order ID')
                     ->sortable(),
-                TextColumn::make('courier.user.id')
-                    ->label('Courier User Id') // Menampilkan nama user dari courier
+                TextColumn::make('order.user.name')
+                    ->label('User Name') // Menampilkan nama pengguna
+                    ->sortable()
+                    ->searchable(),
+                TextColumn::make('order.user.phone')
+                    ->label('Phone Number') // Menampilkan nomor HP pengguna
+                    ->sortable()
+                    ->searchable(),
+                TextColumn::make('order.delivery.address')
+                    ->label('Delivery Address') // Menampilkan alamat pengiriman
                     ->sortable()
                     ->searchable(),
                 TextColumn::make('courier.user.name')
-                    ->label('Courier Name') // Menampilkan nama user dari courier
+                    ->label('Courier Name') // Menampilkan nama kurir
                     ->sortable()
-                    ->searchable(),  
+                    ->searchable(),
                 TextColumn::make('courier.vehicle_type')
                     ->label('Vehicle Type')
                     ->sortable(),
