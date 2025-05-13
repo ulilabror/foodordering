@@ -26,7 +26,7 @@ class CustomerPanelProvider extends PanelProvider
         return $panel
             ->id('customer')
             ->path('customer')
-            ->brandName('Mie Gacor customer')
+            ->brandName('Mie Gacor')
             ->login()
             ->registration()
             //create  a button to redirect to courier registration page
@@ -38,7 +38,12 @@ class CustomerPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/Customer/Resources'), for: 'App\\Filament\\Customer\\Resources')
             ->discoverPages(in: app_path('Filament/Customer/Pages'), for: 'App\\Filament\\Customer\\Pages')
             ->pages([
+
                 Pages\Dashboard::class,
+                \App\Filament\Customer\Pages\Basket::class,
+            ])
+            ->resources([
+                \App\Filament\Customer\Resources\MenuResource::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Customer/Widgets'), for: 'App\\Filament\\Customer\\Widgets')
             ->widgets([

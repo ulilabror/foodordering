@@ -14,7 +14,6 @@ class Order extends Model
         'status',
         'payment_method',
         'total_price',
-        'delivery_address',
     ];
 
     public static function boot()
