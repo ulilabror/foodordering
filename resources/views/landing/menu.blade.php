@@ -36,7 +36,7 @@
                         @foreach ($category->menus as $menu)
                             <div class="col-lg-4 menu-item">
                                 <a href="{{ asset($menu->image_path) }}" class="glightbox">
-                                    <img src="{{ Storage::url($menu->image_path) }}" class="menu-img img-fluid" alt="{{ $menu->name }}">
+                                    <img src="{{ Storage::url($menu->image_path) }}" class="menu-img img-fluid" alt="{{ $menu->name }}" style="width: 100%; height: 200px; object-fit: cover;">
                                 </a>
                                 <h4>{{ $menu->name }}</h4>
                                 <p class="ingredients">

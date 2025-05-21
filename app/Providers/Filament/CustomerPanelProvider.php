@@ -17,7 +17,8 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-
+use App\Filament\Customer\Resources\CustomerResource\Widgets\MonthlySpendChart;
+use App\Filament\Customer\Resources\CustomerResource\Widgets\LastOrderStatus;
 
 class CustomerPanelProvider extends PanelProvider
 {
@@ -47,8 +48,11 @@ class CustomerPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Customer/Widgets'), for: 'App\\Filament\\Customer\\Widgets')
             ->widgets([
+                MonthlySpendChart::class,
+                LastOrderStatus::class,
                 Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
+                // Widgets\FilamentInfoWidget::class,
+            // Removed invalid class reference
             ])
             ->middleware([
                 EncryptCookies::class,

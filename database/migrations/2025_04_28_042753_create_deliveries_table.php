@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('order_id')->constrained('orders')->onDelete('cascade');
             $table->foreignId('courier_id')->nullable()->constrained('couriers')->onDelete('cascade');
             $table->decimal('delivery_fee', 10, 2);
-            $table->enum('delivery_status', ['assigned', 'on_delivery', 'delivered'])->nullable();
+            $table->enum('delivery_status', ['assigned', 'on_delivery', 'delivered', 'cancelled'])->nullable();
             $table->text('address')->nullable(); // Add address column
             $table->decimal('latitude', 10, 8)->nullable(); // Add latitude column
             $table->decimal('longitude', 11, 8)->nullable(); // Add longitude column

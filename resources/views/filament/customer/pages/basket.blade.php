@@ -61,220 +61,100 @@
         @endif
     </div>
     @push('scripts')
-        <script>
-            window.addEventListener('load', () => {
-                console.log('[INIT] Window load triggered');
-                waitForRefreshButton();
-                waitForLivewireComponent();
-            });
+<script>
+    window.updateLatLngInputs = function (lat, lng) {
+                const latInput = document.getElementById('mountedActionsData.0.latitude');
+                const lngInput = document.getElementById('mountedActionsData.0.longitude');
+   if (latInput) {
+        latInput.value = lat;
+        latInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
 
-            document.addEventListener('livewire:load', () => {
-                console.log('[LIVEWIRE] Livewire loaded');
-                waitForRefreshButton();
-                waitForLivewireComponent();
-                console.log('[LIVEWIRE] Refresh button listener added');
-            });
+    if (lngInput) {
+        lngInput.value = lng;
+        lngInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+            }
+    window.initializeBasketMap = function (latitude, longitude, elementId = 'map-basket') {
+        console.log(`[initializeBasketMap] Attempting to init map at #${elementId} with lat=${latitude}, lng=${longitude}`);
+        const mapElement = document.getElementById(elementId);
+        if (!mapElement) {
+            console.warn(`[initializeBasketMap] Element #${elementId} not found`);
+            return;
+        }
 
-            function waitForLivewireComponent() {
-                console.log('[DEBUG] Checking for Livewire component...');
-                const wireIdElement = document.querySelector('[wire\\:id]');
-                if (!wireIdElement) {
-                    console.warn('[DEBUG] No Livewire component found. Retrying...');
-                    return setTimeout(waitForLivewireComponent, 300);
-                }
+        // Hapus peta lama jika ada
+        if (window.mapBasketInstance) {
+            console.log('[initializeBasketMap] Removing previous map instance');
+            window.mapBasketInstance.remove();
+        }
 
-                if (!window.Livewire) {
-                    console.warn('[DEBUG] Livewire is not loaded. Retrying...');
-                    return setTimeout(waitForLivewireComponent, 300);
-                }
+        updateLatLngInputs(latitude, longitude);
 
-                const livewireComponent = Livewire.find(wireIdElement.getAttribute('wire:id'));
-                if (!livewireComponent) {
-                    console.warn('[DEBUG] Livewire component not found. Retrying...');
-                    return setTimeout(waitForLivewireComponent, 300);
-                }
+        // Buat peta baru
+        window.mapBasketInstance = L.map(elementId).setView([latitude, longitude], 13);
+        console.log('[initializeBasketMap] New map instance created');
 
-                console.log('[DEBUG] Livewire component found:', livewireComponent);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(window.mapBasketInstance);
 
-                // Tunggu hingga elemen #map tersedia
-                const mapContainer = document.getElementById('map');
-                if (!mapContainer) {
-                    console.warn('[DEBUG] #map container not found. Retrying...');
-                    return setTimeout(waitForLivewireComponent, 300);
-                }
+        // Tambahkan marker yang dapat di-drag
+        const marker = L.marker([latitude, longitude], { draggable: true }).addTo(window.mapBasketInstance);
+        marker.on('dragend', function () {
+            const { lat, lng } = marker.getLatLng();
+            console.log(`[initializeBasketMap] Marker dragged to lat=${lat}, lng=${lng}`);
 
-                let lat = -6.2; // Default latitude
-                let lng = 106.816; // Default longitude
+            // Perbarui input latitude dan longitude menggunakan fungsi
+            updateLatLngInputs(lat, lng);
 
+            // Fungsi untuk memperbarui input latitude dan longitude
+          
+
+            // Pusatkan peta pada marker
+            window.mapBasketInstance.setView([lat, lng], window.mapBasketInstance.getZoom());
+        });
+
+        console.log('[initializeBasketMap] Tile layer and marker added');
+    };
+
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('basketMap', () => ({
+            latitude: @entangle('latitude'),
+            longitude: @entangle('longitude'),
+
+            initializeBasketMap() { // Nama fungsi diubah dari init() ke initializeBasketMap
+                console.log('[basketMap] Initializing map...');
+                this.refreshLocation();
+            },
+
+            refreshLocation() {
                 if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            lat = position.coords.latitude;
-                            lng = position.coords.longitude;
-                            console.log('[DEBUG] GPS location obtained:', { lat, lng });
-                            initLeafletMap(lat, lng, livewireComponent);
-
-                        },
-                        (error) => {
-                            console.error('[DEBUG] Error getting GPS location:', error);
-                            console.warn('[DEBUG] Using default coordinates:', { lat, lng });
-                            initLeafletMap(lat, lng, livewireComponent);
-                        }
-                    );
-                } else {
-                    console.warn('[DEBUG] Geolocation not supported. Using default coordinates:', { lat, lng });
-                    initLeafletMap(lat, lng, livewireComponent);
-                }
-
-                console.log('[DEBUG] Livewire component and #map container ready');
-                initLeafletMap(lat, lng, livewireComponent);
-            }
-
-            function initLeafletMap(lat, lng, livewireComponent) {
-                console.log('[DEBUG] Initializing map with coordinates:', { lat, lng });
-
-                livewireComponent.set('latitude', lat);
-                livewireComponent.set('longitude', lng);
-                console.log('[DEBUG] Livewire coordinates set:', { lat, lng });
-
-
-
-                setTimeout(() => {
-                    const latitudeInput = document.getElementById('mountedActionsData.0.latitude');
-                    const longitudeInput = document.getElementById('mountedActionsData.0.longitude');
-
-                    if (latitudeInput && longitudeInput) {
-                        latitudeInput.value = lat;
-                        longitudeInput.value = lng;
-
-                        // Trigger event agar Livewire aware
-                        latitudeInput.dispatchEvent(new Event('input', { bubbles: true }));
-                        longitudeInput.dispatchEvent(new Event('input', { bubbles: true }));
-
-                        console.log('[DEBUG] Latitude and Longitude inputs updated and events dispatched:', {
-                            latitude: lat,
-                            longitude: lng
-                        });
-                    } else {
-                        console.warn('[DEBUG] Latitude or Longitude input not found in the DOM.');
-                    }
-                }, 1000);
-
-
-
-                const mapContainer = document.getElementById('map');
-                if (!mapContainer) {
-                    console.error('[DEBUG] #map container not found!');
-                    return;
-                }
-
-
-
-                // Periksa apakah peta sudah diinisialisasi
-                if (window.leafletMap) {
-                    console.warn('[DEBUG] Map is already initialized. Destroying the existing map...');
-                    window.leafletMap.remove(); // Hancurkan peta yang sudah ada
-                    window.leafletMap = null; // Set ulang variabel peta
-                }
-
-                // Inisialisasi peta baru
-                const map = L.map(mapContainer).setView([lat, lng], 13);
-                window.leafletMap = map;
-
-                console.log('[DEBUG] Map initialized at:', { lat, lng });
-
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; OpenStreetMap contributors'
-                }).addTo(map);
-
-                const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
-                console.log('[DEBUG] Marker added at:', { lat, lng });
-
-                marker.on('dragend', (e) => {
-                    const pos = marker.getLatLng();
-                    console.log('[DEBUG] Marker dragged to:', pos);
-                    livewireComponent.set('latitude', pos.lat);
-                    livewireComponent.set('longitude', pos.lng);
-                });
-
-                map.on('click', (e) => {
-                    console.log('[DEBUG] Map clicked at:', e.latlng);
-                    marker.setLatLng(e.latlng);
-                    livewireComponent.set('latitude', e.latlng.lat);
-                    livewireComponent.set('longitude', e.latlng.lng);
-                });
-
-                console.log('[DEBUG] Map setup complete.');
-            }
-
-            function waitForRefreshButton() {
-                console.log('[DEBUG] Checking for Refresh Location button...');
-                const refreshButton = document.getElementById('refresh-location');
-                if (!refreshButton) {
-                    console.warn('[DEBUG] Refresh Location button not found. Retrying...');
-                    return setTimeout(waitForRefreshButton, 300); // Retry after 300ms
-                }
-
-                console.log('[DEBUG] Refresh Location button found. Adding event listener...');
-                refreshButton.addEventListener('click', handleRefreshLocation);
-            }
-
-            function handleRefreshLocation() {
-                console.log('[DEBUG] Refresh location button clicked.');
-
-                if (navigator.geolocation) {
-                    console.log('[DEBUG] Geolocation supported. Requesting current position...');
                     navigator.geolocation.getCurrentPosition(
                         (position) => {
                             const lat = position.coords.latitude;
                             const lng = position.coords.longitude;
 
+                            console.log(`[basketMap] User location lat=${lat}, lng=${lng}`);
+                            this.latitude = lat;
+                            this.longitude = lng;
 
+                            // Inisialisasi peta dengan lokasi pengguna
+                            window.initializeBasketMap(lat, lng);
 
-                            console.log('[DEBUG] GPS location refreshed:', { lat, lng });
-
-                            // Perbarui peta dan marker
-                            if (window.leafletMap) {
-                                const map = window.leafletMap;
-                                const marker = map._layers[Object.keys(map._layers).find(key => map._layers[key] instanceof L.Marker)];
-
-                                map.setView([lat, lng], 15);
-                                marker.setLatLng([lat, lng]);
-
-                                // Perbarui nilai di Livewire
-                                const livewireComponent = Livewire.find(document.querySelector('[wire\\:id]').getAttribute('wire:id'));
-                                livewireComponent.set('latitude', lat);
-                                livewireComponent.set('longitude', lng);
-
-                                console.log('[DEBUG] Livewire updated with new coordinates:', { lat, lng });
-
-                                // Panggil metode Livewire
-                                livewireComponent.call('updateLatLng', lat, lng);
-                                livewireComponent.call('setCoordinates', lat, lng);
-
-
-                                console.log('[DEBUG] Livewire methods updateLatLng and setCoordinates called.');
-                            } else {
-                                console.error('[DEBUG] Leaflet map is not initialized.');
-                            }
+                            
                         },
                         (error) => {
-                            console.error('[DEBUG] Error refreshing GPS location:', error);
-                            alert('Unable to retrieve your location. Please check your GPS settings.');
+                            console.warn(`[basketMap] Geolocation error: ${error.message}`);
                         }
                     );
                 } else {
-                    console.warn('[DEBUG] Geolocation is not supported by this browser.');
-                    alert('Geolocation is not supported by your browser.');
+                    console.warn('[basketMap] Geolocation not supported');
                 }
-
-
-
             }
-
-
-
-        </script>
-    @endpush
+        }));
+    });
+</script>
+@endpush
 
 </x-filament::page>

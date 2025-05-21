@@ -25,7 +25,7 @@ class Order extends Model
             // Automatically create a Delivery for the created Order
             $order->delivery()->create([
                 'courier_id' => null, // Set to null or assign a default courier if needed
-                'delivery_fee' => 0, // Default delivery fee, adjust as needed
+                'delivery_fee' => 2000, // Default delivery fee, adjust as needed
                 'delivery_status' => null, // Default status
             ]);
         });

@@ -136,7 +136,7 @@ class DeliveryResource extends Resource
                 TextColumn::make('delivery_status')
                     ->badge()
                     ->colors([
-                        'secondary' => 'assigned',
+                        'info' => 'assigned',
                         'warning' => 'on_delivery',
                         'success' => 'delivered',
                     ])
@@ -204,17 +204,24 @@ class DeliveryResource extends Resource
                     ->label('Batalkan Pengiriman')
                     ->action(function ($record) {
                         $record->update([
-                            'delivery_status' => null, // Ubah status menjadi "Dibatalkan"
+                            'delivery_status' => 'assigned', // Ubah status menjadi "Dibatalkan"
                         ]);
 
                         // Update status pesanan (orders.status) menjadi 'cancelled'
                         $record->order->update([
-                            'status' => 'cancelled',
+                            'status' => null,
                         ]);
                     })
                     ->requiresConfirmation()
                     ->color('danger')
                     ->visible(fn ($record) => in_array($record->delivery_status, ['assigned', 'on_delivery'])), // Tampilkan hanya jika status "Ditugaskan" atau "Sedang Dikirim"
+                Tables\Actions\Action::make('bukaMaps')
+                    ->label('Buka Lokasi Tujuan')
+                    ->url(fn ($record) => "https://www.google.com/maps/dir//'{$record->latitude},{$record->longitude}'/")
+                    ->openUrlInNewTab()
+                    ->color('success')
+                    ->icon('heroicon-o-map')
+                    ->visible(fn ($record) => $record->delivery_status === 'on_delivery' && $record->latitude && $record->longitude), // Tampilkan hanya jika status "assigned" dan latitude serta longitude tersedia
             ])
             ->bulkActions([
                 // Tables\Actions\DeleteBulkAction::make(),

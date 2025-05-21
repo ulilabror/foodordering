@@ -44,6 +44,7 @@ class Delivery extends Model
             if ($hasActiveDelivery) {
                 // Query pengiriman aktif untuk kurir
                 $query->where('courier_id', $user->courier->id)
+                    ->whereNotIn('delivery_status', ['delivered'])
                     ->orWhereIn('delivery_status', ['assigned', 'on_delivery']);
             } else {
                 // Query pengiriman yang belum diambil

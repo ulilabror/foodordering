@@ -5,6 +5,7 @@ namespace App\Filament\Customer\Pages;
 use App\Filament\Customer\Resources\DeliveryResource;
 use Filament\Forms;
 use Filament\Notifications\Notification;
+use Filament\Forms\Components\TextInput;
 use Filament\Pages\Actions\Action;
 use Filament\Pages\Page;
 
@@ -126,14 +127,11 @@ class Basket extends Page implements Forms\Contracts\HasForms
                     ]);
                 }
 
-                // Simpan data ke tabel deliveries dengan latitude dan longitude
-                $order->delivery()->create([
+                // Update data delivery yang sudah dibuat secara otomatis oleh event di model Order
+                $order->delivery()->update([
                     'address' => $this->deliveryAddress,
-                    'delivery_status' => null,
-                    'order_id' => $order->id,
-                    'delivery_fee' => 0, // Atau sesuai dengan logika Anda
-                    'latitude' => $this->latitude, // Ambil dari properti Livewire
-                    'longitude' => $this->longitude, // Ambil dari properti Livewire
+                    'latitude' => $this->latitude,
+                    'longitude' => $this->longitude,
                 ]);
 
                 session()->forget('basket');
@@ -155,15 +153,15 @@ class Basket extends Page implements Forms\Contracts\HasForms
         }
     }
 
-    public function updatedLatitude($value)
-    {
-        \Log::info('Latitude updated: ' . $value);
-    }
+    // public function updatedLatitude($value)
+    // {
+    //     \Log::info('Latitude updated: ' . $value);
+    // }
 
-    public function updatedLongitude($value)
-    {
-        \Log::info('Longitude updated: ' . $value);
-    }
+    // public function updatedLongitude($value)
+    // {
+    //     \Log::info('Longitude updated: ' . $value);
+    // }
 
     protected function getActions(): array
     {
@@ -191,19 +189,20 @@ class Basket extends Page implements Forms\Contracts\HasForms
                         ->view('components.fields.gps-picker-customer')
                         ->columnSpanFull(),
 
-                    Forms\Components\TextInput::make('latitude')
+                    TextInput::make('latitude')
                         ->label('Latitude')
+                        ->extraAttributes(['x-model' => 'latitude']) // Sinkronisasi dengan Alpine.js
                         ->readOnly()
                         ->required()
-                        ->reactive()
-                        ->default($this->latitude), // default langsung di field
+                        ->reactive(),
 
-                    Forms\Components\TextInput::make('longitude')
+                    TextInput::make('longitude')
                         ->label('Longitude')
+                        ->extraAttributes(['x-model' => 'longitude'])// Sinkronisasi dengan Alpine.js
                         ->readOnly()
                         ->required()
-                        ->reactive()
-                        ->default($this->longitude), // default langsung di field
+                        ->reactive(),
+                    // default langsung di field
                 ])
                 ->action(function (array $data) {
                     // Simpan data form ke property untuk digunakan di checkout()
@@ -214,7 +213,7 @@ class Basket extends Page implements Forms\Contracts\HasForms
                     $this->checkout();
                 })
                 ->modalHeading('Form Pembayaran')
-                ->modalButton('Submit')
+                ->modalButton('checkout')
                 ->color('primary'),
         ];
     }

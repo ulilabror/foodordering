@@ -92,7 +92,7 @@ class MenuResource extends Resource
             ])
             ->actions([
                 Action::make('addToBasket')
-                    ->label('Add to Basket')
+                    ->label('Tambah ke Keranjang')
                     ->form([
                         TextInput::make('quantity')
                             ->label('Quantity')
@@ -140,23 +140,23 @@ class MenuResource extends Resource
             ])
             ->headerActions([
                 Action::make('viewBasket')
-                    ->label('Lihat Pesanan')
+                    ->label('Lihat Keranjang')
                     ->url(Basket::getNavigationUrl()) // Mengarahkan ke halaman Basket
                     ->color('info')
                     ->icon('heroicon-o-eye'),
-                Action::make('checkout')
-                    ->label('Checkout')
-                    ->action(function () {
-                        // Implement checkout logic here
-                        session()->forget('basket');
-                        \Filament\Notifications\Notification::make()
-                            ->title('Checkout successful!')
-                            ->success()
-                            ->send();
-                    })
-                    ->color('success')
-                    ->icon('heroicon-o-check')
-                    ->requiresConfirmation(),
+                // Action::make('checkout')
+                //     ->label('Checkout')
+                //     ->action(function () {
+                //         // Implement checkout logic here
+                //         session()->forget('basket');
+                //         \Filament\Notifications\Notification::make()
+                //             ->title('Checkout successful!')
+                //             ->success()
+                //             ->send();
+                //     })
+                //     ->color('success')
+                //     ->icon('heroicon-o-check')
+                //     ->requiresConfirmation(),
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
