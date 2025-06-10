@@ -23,7 +23,7 @@ Pastikan sistem Anda telah memiliki:
 1. **Clone Repository**
 
    * Jalankan perintah:
-     `git clone https://github.com/your-repository/foodordering.git`
+     `git clone https://github.com/ulilabror/foodordering.git`
    * Masuk ke folder proyek:
      `cd foodordering`
 
